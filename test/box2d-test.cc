@@ -7,7 +7,7 @@ struct TestRegistry
 {
   TestRegistry()
   {
-  	physics_init();
+    physics_init();
   }
 
 };
@@ -23,28 +23,28 @@ int main()
   auto entity2 = registry.create();
   auto& body = registry.assign< Physics::Body >(entity2);
   {
-  	auto& fixture = registry.assign< Physics::Fixture >(entity2);
+    auto& fixture = registry.assign< Physics::Fixture >(entity2);
 
-  	b2BodyDef body_def;
-  	body_def.type = b2_dynamicBody;
-  	body_def.position = b2Vec2(0,0);
+    b2BodyDef body_def;
+    body_def.type = b2_dynamicBody;
+    body_def.position = b2Vec2(0,0);
 
-  	b2CircleShape circle_shape;
-  	circle_shape.m_radius = 1.0;
+    b2CircleShape circle_shape;
+    circle_shape.m_radius = 1.0;
 
-  	b2FixtureDef fixture_def;
-  	fixture_def.shape = &circle_shape;
+    b2FixtureDef fixture_def;
+    fixture_def.shape = &circle_shape;
 
-  	body.body = world.world.CreateBody(&body_def);
-  	fixture.fixture = body.body->CreateFixture(&fixture_def);
+    body.body = world.world.CreateBody(&body_def);
+    fixture.fixture = body.body->CreateFixture(&fixture_def);
 
   }
 
   for(int i = 0; i < 10; ++i)
   {
-  	world.step(1);
-  	auto position = body.body->GetPosition();
-  	std::cout << "(" << position.x << ", " << position.y << ")" << std::endl;
+    world.step(1);
+    auto position = body.body->GetPosition();
+    std::cout << "(" << position.x << ", " << position.y << ")" << std::endl;
   }
 
   return 0;
