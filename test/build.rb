@@ -9,6 +9,7 @@ opts = {
   cfiles: 'box2d-test.cc',
   box2d: nil,
   box2d_build: 'x86_64/Debug',
+  l: ['Box2D']
 }
 
 OptionParser.new do |o|
@@ -30,6 +31,10 @@ OptionParser.new do |o|
 
   o.on '-I=DIR', 'c++ header file dir' do |dir|
     (opts[:I] ||= []) << dir
+  end
+
+  o.on '-l library', 'library to link with' do |lib|
+    opts[:l] << lib
   end
 
   o.on '--box2d=DIR', 'path to box2d' do |dir|
@@ -61,7 +66,7 @@ cmd = "#{opts[:cc]} \
   #{opts[:cfiles]} \
   -o #{opts[:output]} \
   -L #{opts[:box2d]}/build/bin/#{opts[:box2d_build]} \
-  -lBox2D \
+  #{opts[:l].map{|lib| "-l#{lib}"}.join(' ')} \
   #{`pkg-config --libs sfml-graphics`.strip}"
 
 puts "Running command: #{cmd}"

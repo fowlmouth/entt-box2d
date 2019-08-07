@@ -1,5 +1,12 @@
 #pragma once
 
+
+#ifdef FOWL_ENTT_MRUBY
+# include <mruby/proc.h>
+# include <mruby/hash.h>
+#endif
+
+
 namespace Physics
 {
 
