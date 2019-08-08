@@ -132,6 +132,60 @@ struct MRuby::ComponentInterface< Physics::Body >
 };
 
 
+template<>
+struct MRuby::ComponentInterface< Physics::Fixture >
+: MRuby::DefaultComponentInterface< Physics::Fixture >
+{
+  static mrb_value get(mrb_state* state, entt::registry& registry, entt::entity entity, entt::registry::component_type type)
+  {
+    if(auto world = registry.try_get< Physics::Fixture >(entity))
+    {
+      MRuby::HashBuilder hash(state);
+
+      // auto& sf_sprite = sprite->sprite;
+      return hash.self;
+    }
+    return mrb_nil_value();
+  }
+
+  static mrb_value set(mrb_state* state, entt::registry& registry, entt::entity entity, entt::registry::component_type type, mrb_int argc, mrb_value* arg)
+  {
+    if(!argc || ! mrb_hash_p(arg[0]))
+      return mrb_nil_value();
+
+    b2FixtureDef fixture_def;
+    std::string shape_type;
+    entt::entity body_id;
+
+    MRuby::HashReader reader(state, arg[0]);
+    reader("body", body_id)("shape", shape_type); //("position", body_def.position);
+
+    if(!registry.valid(body_id) || !registry.has< Physics::Body >(body_id))
+      return mrb_nil_value();
+
+    b2Body* body = registry.get< Physics::Body >(body_id).body;
+
+    b2Fixture* fixture = nullptr;
+    if(shape_type == "circle")
+    {
+      b2CircleShape circle_shape;
+      reader("radius", circle_shape.m_radius);
+      fixture_def.shape = &circle_shape;
+      fixture = body->CreateFixture(&fixture_def);
+    }
+
+    if(fixture)
+    {
+      registry.assign_or_replace< Physics::Fixture >(entity, fixture);
+      return arg[0];
+    }
+
+    return mrb_nil_value();
+
+  }
+};
+
+
 
 struct TestRegistry
 : entt::registry,
@@ -148,7 +202,7 @@ struct TestRegistry
     physics_init();
 
     mrb = mrb_open();
-    mrb_init< Physics::World, Physics::Body >(mrb);
+    mrb_init< Physics::World, Physics::Body, Physics::Fixture >(mrb);
   }
 
 };
@@ -160,18 +214,16 @@ int main()
   TestRegistry registry;
 
   mrb_load_string(registry.mrb, R"MRUBY(
-    entity = $registry.create_entity
-    entity.set 'Physics::World', { gravity: [0, 10] }
-    @world_id = entity.id
+    world = $registry.create_entity
+    world.set 'Physics::World', { gravity: [0, 10] }
+    @world_id = world.id
 
     entity2 = $registry.create_entity
-    entity2.set 'Physics::Body', { world: @world_id, type: 'dynamic', position: [0,0] }
+    entity2.set 'Physics::Body', { world: world.id, type: 'dynamic', position: [0,0] }
+    entity2.set 'Physics::Fixture', { body: entity2.id, shape: 'circle', radius: 1.0 }
     @entity2_id = entity2.id
   )MRUBY");
 
-  // auto entity1 = registry.create();
-  // auto& world = registry.assign< Physics::World >(entity1);
-  // world.world.SetGravity(b2Vec2(0,10));
   auto entity1 = static_cast< entt::entity >(
     mrb_fixnum(
       mrb_iv_get(
@@ -183,8 +235,6 @@ int main()
   );
   auto& world = registry.get< Physics::World >(entity1);
 
-  // auto entity2 = registry.create();
-  // auto& body = registry.assign< Physics::Body >(entity2);
   auto entity2 = static_cast< entt::entity >(
     mrb_fixnum(
       mrb_iv_get(
@@ -195,23 +245,6 @@ int main()
     )
   );
   auto& body = registry.get< Physics::Body >(entity2);
-  {
-    auto& fixture = registry.assign< Physics::Fixture >(entity2);
-
-    // b2BodyDef body_def;
-    // body_def.type = b2_dynamicBody;
-    // body_def.position = b2Vec2(0,0);
-
-    b2CircleShape circle_shape;
-    circle_shape.m_radius = 1.0;
-
-    b2FixtureDef fixture_def;
-    fixture_def.shape = &circle_shape;
-
-    // body.body = world.world.CreateBody(&body_def);
-    fixture.fixture = body.body->CreateFixture(&fixture_def);
-
-  }
 
   for(int i = 0; i < 10; ++i)
   {
