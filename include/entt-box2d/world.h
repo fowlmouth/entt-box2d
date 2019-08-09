@@ -260,6 +260,46 @@ namespace Physics
 } // ::Physics
 
 
+template<>
+struct MRuby::ComponentInterface< Physics::World >
+: MRuby::DefaultComponentInterface< Physics::World >
+{
+  static mrb_value get(mrb_state* state, entt::registry& registry, entt::entity entity, entt::registry::component_type type)
+  {
+    if(auto world = registry.try_get< Physics::World >(entity))
+    {
+      MRuby::HashBuilder hash(state);
+
+      // auto& sf_sprite = sprite->sprite;
+      return hash.self;
+    }
+    return mrb_nil_value();
+  }
+
+  static mrb_value set(mrb_state* state, entt::registry& registry, entt::entity entity, entt::registry::component_type type, mrb_int argc, mrb_value* arg)
+  {
+    if(!argc || ! mrb_hash_p(arg[0]))
+      return mrb_nil_value();
+
+    b2Vec2 gravity;
+
+    MRuby::HashReader reader(state, arg[0]);
+    reader("gravity", gravity);
+
+    auto& world = registry.assign_or_replace< Physics::World >(entity);
+    world.world.SetGravity(gravity);
+
+    mrb_int iterations;
+    if(MRuby::read_hash(reader, "position-iterations", iterations))
+      world.positionIterations = iterations;
+    if(MRuby::read_hash(reader, "velocity-iterations", iterations))
+      world.velocityIterations = iterations;
+
+    return arg[0];
+  }
+};
+
+
 // namespace Data
 // {
 
