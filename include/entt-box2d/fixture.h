@@ -34,6 +34,64 @@ void destroy_fixture(entt::registry& r, entt::entity id)
 } // ::Physics
 
 
+
+#ifdef FOWL_ENTT_MRUBY
+
+template<>
+struct MRuby::ComponentInterface< Physics::Fixture >
+: MRuby::DefaultComponentInterface< Physics::Fixture >
+{
+  static mrb_value get(mrb_state* state, entt::registry& registry, entt::entity entity, entt::registry::component_type type)
+  {
+    if(auto world = registry.try_get< Physics::Fixture >(entity))
+    {
+      MRuby::HashBuilder hash(state);
+
+      // auto& sf_sprite = sprite->sprite;
+      return hash.self;
+    }
+    return mrb_nil_value();
+  }
+
+  static mrb_value set(mrb_state* state, entt::registry& registry, entt::entity entity, entt::registry::component_type type, mrb_int argc, mrb_value* arg)
+  {
+    if(!argc || ! mrb_hash_p(arg[0]))
+      return mrb_nil_value();
+
+    b2FixtureDef fixture_def;
+    std::string shape_type;
+    entt::entity body_id;
+
+    MRuby::HashReader reader(state, arg[0]);
+    reader("body", body_id)("shape", shape_type); //("position", body_def.position);
+
+    if(!registry.valid(body_id) || !registry.has< Physics::Body >(body_id))
+      return mrb_nil_value();
+
+    b2Body* body = registry.get< Physics::Body >(body_id).body;
+
+    b2Fixture* fixture = nullptr;
+    if(shape_type == "circle")
+    {
+      b2CircleShape circle_shape;
+      reader("radius", circle_shape.m_radius);
+      fixture_def.shape = &circle_shape;
+      fixture = body->CreateFixture(&fixture_def);
+    }
+
+    if(fixture)
+    {
+      registry.assign_or_replace< Physics::Fixture >(entity, fixture);
+      return arg[0];
+    }
+
+    return mrb_nil_value();
+
+  }
+};
+
+#endif
+
 // namespace Data
 // {
 

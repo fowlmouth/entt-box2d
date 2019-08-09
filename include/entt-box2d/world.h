@@ -260,6 +260,9 @@ namespace Physics
 } // ::Physics
 
 
+
+#ifdef FOWL_ENTT_MRUBY
+
 template<>
 struct MRuby::ComponentInterface< Physics::World >
 : MRuby::DefaultComponentInterface< Physics::World >
@@ -299,6 +302,7 @@ struct MRuby::ComponentInterface< Physics::World >
   }
 };
 
+#endif
 
 // namespace Data
 // {
