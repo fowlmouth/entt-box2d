@@ -61,9 +61,19 @@ struct MRuby::ComponentInterface< Physics::Fixture >
     b2FixtureDef fixture_def;
     std::string shape_type;
     entt::entity body_id;
+    b2Vec2 offset;
+    float scale = 1.0;
 
     MRuby::HashReader reader(state, arg[0]);
-    reader("body", body_id)("shape", shape_type); //("position", body_def.position);
+    reader
+      ("body", body_id)
+      ("shape", shape_type)
+      ("scale", scale)
+      ("offset", offset)
+      ("density", fixture_def.density)
+      ("friction", fixture_def.friction)
+      ("is-sensor", fixture_def.isSensor)
+    ;
 
     if(!registry.valid(body_id) || !registry.has< Physics::Body >(body_id))
       return mrb_nil_value();
@@ -74,10 +84,66 @@ struct MRuby::ComponentInterface< Physics::Fixture >
     if(shape_type == "circle")
     {
       b2CircleShape circle_shape;
-      reader("radius", circle_shape.m_radius);
       fixture_def.shape = &circle_shape;
+
+      reader("radius", circle_shape.m_radius);
+      circle_shape.m_radius *= scale;
+      circle_shape.m_p = offset;
+
       fixture = body->CreateFixture(&fixture_def);
     }
+    else if(shape_type == "poly")
+    {
+      b2PolygonShape polygon_shape;
+      fixture_def.shape = &polygon_shape;
+
+      mrb_value points = mrb_hash_get(state, arg[0], mrb_symbol_value(mrb_intern_cstr(state, "points")));
+      mrb_int points_size = ARY_LEN(mrb_ary_ptr(points));
+
+      std::vector< b2Vec2 > vertices;
+      vertices.resize(points_size);
+      for(int i = 0; i < vertices.size(); ++i)
+      {
+        b2vec2(state, mrb_ary_entry(points, i), vertices[i]);
+        vertices[i] *= scale;
+        vertices[i] += offset;
+      }
+      polygon_shape.Set(&vertices[0], vertices.size());
+
+      fixture = body->CreateFixture(&fixture_def);
+    }
+
+    //TODO finish moving these from the old json stuff
+//       else if(type == "box")
+//       {
+//         float width = json["width"].number_value() * scale;
+//         float height = json["height"].number_value() * scale;
+//         float angle = json["angle"].number_value();
+
+//         b2PolygonShape box_shape;
+//         box_shape.SetAsBox(width, height, offset, angle);
+
+//         fixture_def.shape = &box_shape;
+//         fixture = b2body->CreateFixture(&fixture_def);
+//       }
+//       else if(type == "chain")
+//       {
+//         const auto& points = json["points"].array_items();
+//         std::vector< b2Vec2 > vertices;
+//         vertices.resize(points.size());
+//         for(int i = 0; i < vertices.size(); ++i)
+//           vertices[i] = scale * b2vec2(points[i]) + offset;
+
+//         b2ChainShape chain_shape;
+//         if(json["loop"].is_null())
+//           chain_shape.CreateChain(&vertices[0], vertices.size());
+//         else
+//           chain_shape.CreateLoop(&vertices[0], vertices.size());
+
+//         fixture_def.shape = &chain_shape;
+//         fixture = b2body->CreateFixture(&fixture_def);
+//         LogDebug("Chain shape: " << fixture);
+//       }
 
     if(fixture)
     {
