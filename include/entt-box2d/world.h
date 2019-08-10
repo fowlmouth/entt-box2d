@@ -3,73 +3,57 @@
 namespace Physics
 {
 
-  // struct ContactListener : public b2ContactListener
-  // {
+  struct ContactListener : public b2ContactListener
+  {
+    entt::registry* registry;
+    entt::entity world;
 
-  //   entt::registry* registry;
-  //   entt::entity world;
+    ContactListener(entt::registry* r, entt::entity world)
+    : b2ContactListener(), registry(r), world(world)
+    {
+    }
 
-  //   ContactListener(entt::registry* r, entt::entity world)
-  //   : b2ContactListener(), registry(r), world(world)
-  //   {
-  //   }
+    ContactListener(ContactListener&& cl)
+    : registry(cl.registry), world(cl.world)
+    {
+      cl.registry = nullptr;
+      cl.world = entt::null;
+    }
 
-  //   ContactListener(ContactListener&& cl)
-  //   : registry(cl.registry), world(cl.world)
-  //   {
-  //     cl.registry = nullptr;
-  //     cl.world = entt::null;
-  //   }
+    ContactListener& operator= (ContactListener&& cl)
+    {
+      registry = cl.registry;
+      world = cl.world;
 
-  //   ContactListener& operator= (ContactListener&& cl)
-  //   {
-  //     registry = cl.registry;
-  //     world = cl.world;
+      cl.registry = nullptr;
+      cl.world = entt::null;
 
-  //     cl.registry = nullptr;
-  //     cl.world = entt::null;
+      return *this;
+    }
 
-  //     return *this;
-  //   }
-
-  //   void BeginContact(b2Contact* contact);
-  //   // {
-  //   //   std::cout << "begin contact" << std::endl;
-  //   // }
-  //   void EndContact(b2Contact* contact);
-  //   // {
-  //   //   std::cout << "end contact" << std::endl;
-  //   // }
-
-  //   void PreSolve(b2Contact* contact, const b2Manifold* old_manifold);
-  //   // {
-  //   //   std::cout << "pre solve" << std::endl;
-  //   // }
-  //   void PostSolve(b2Contact* contact, const b2ContactImpulse* impulse); // old_manifold)
-  //   // {
-  //   //   std::cout << "post solve" << std::endl;
-  //   // }
-  // };
+    void BeginContact(b2Contact* contact);
+    void EndContact(b2Contact* contact);
+    void PreSolve(b2Contact* contact, const b2Manifold* old_manifold);
+    void PostSolve(b2Contact* contact, const b2ContactImpulse* impulse);
+  };
 
   struct World
   {
-    b2World world; // = nullptr;
+    b2World world;
     int32 velocityIterations = 6;
     int32 positionIterations = 2;
     float PPM = 32.f;
 
-    // ContactListener contact_listener;
+    ContactListener contact_listener;
 
     inline void step(float dt)
     {
-      // if(world) 
       world.Step(dt, velocityIterations, positionIterations);
     }
 
     World(World&& w)
-    :  world(std::move(w.world))
-    // ,
-    //   contact_listener(std::move(w.contact_listener)) //std::move(w.world))
+    :  world(std::move(w.world)),
+      contact_listener(std::move(w.contact_listener))
     {
     }
 
@@ -78,18 +62,17 @@ namespace Physics
       world = std::move(w.world);
       velocityIterations = w.velocityIterations;
       positionIterations = w.positionIterations;
-      // contact_listener = std::move(w.contact_listener);
+      contact_listener = std::move(w.contact_listener);
       return *this;
     }
 
     World()
-    : world(b2Vec2(0,0))//, contact_listener(nullptr, entt::null)
+    : world(b2Vec2(0,0)), contact_listener(nullptr, entt::null)
     {
     }
 
     ~World()
     {
-      // std::cout << " World destroyed! " << this << std::endl;
     }
 
   };
@@ -98,8 +81,8 @@ namespace Physics
 
   void construct_world(entt::registry& r, entt::entity id, World& w)
   {
-    // w.contact_listener = ContactListener(&r, id);
-    // w.world.SetContactListener(& w.contact_listener);
+    w.contact_listener = std::move(ContactListener(&r, id));
+    w.world.SetContactListener(& w.contact_listener);
     // std::cout << " set up world contact listener" << std::endl;
   }
 
@@ -156,64 +139,64 @@ namespace Physics
   // using ResourcePreSolveFn = void(*)(entt::registry&, entt::entity, entt::entity, b2Contact*, const b2Manifold*);
   // using ResourcePostSolveFn = void(*)(entt::registry&, entt::entity, entt::entity, b2Contact*, const b2ContactImpulse*);
   
-  // void ContactListener::BeginContact(b2Contact* contact)
-  // {
-  //   // std::cout << "begin contact" << std::endl;
-  //   auto a = contact->GetFixtureA();
-  //   auto b = contact->GetFixtureB();
-  //   auto entity_a = static_cast< entt::registry::entity_type >(reinterpret_cast< uintptr_t >(a->GetUserData()));
-  //   auto entity_b = static_cast< entt::registry::entity_type >(reinterpret_cast< uintptr_t >(b->GetUserData()));
+  void ContactListener::BeginContact(b2Contact* contact)
+  {
+    // std::cout << "begin contact" << std::endl;
+    auto a = contact->GetFixtureA();
+    auto b = contact->GetFixtureB();
+    auto entity_a = static_cast< entt::registry::entity_type >(reinterpret_cast< uintptr_t >(a->GetUserData()));
+    auto entity_b = static_cast< entt::registry::entity_type >(reinterpret_cast< uintptr_t >(b->GetUserData()));
 
-  //   auto handler = Resources::get< ResourceBeginContactFn >(*registry, entity_a, "b2-begin-contact");
-  //   if(handler && *handler) (*handler)(*registry, entity_a, entity_b, contact);
+    // auto handler = Resources::get< ResourceBeginContactFn >(*registry, entity_a, "b2-begin-contact");
+    // if(handler && *handler) (*handler)(*registry, entity_a, entity_b, contact);
     
-  //   handler = Resources::get< ResourceBeginContactFn >(*registry, entity_b, "b2-begin-contact");
-  //   if(handler && *handler) (*handler)(*registry, entity_b, entity_a, contact);
+    // handler = Resources::get< ResourceBeginContactFn >(*registry, entity_b, "b2-begin-contact");
+    // if(handler && *handler) (*handler)(*registry, entity_b, entity_a, contact);
 
-  // }
+  }
 
-  // void ContactListener::EndContact(b2Contact* contact)
-  // {
-  //   auto a = contact->GetFixtureA();
-  //   auto b = contact->GetFixtureB();
-  //   auto entity_a = static_cast< entt::registry::entity_type >(reinterpret_cast< uintptr_t >(a->GetUserData()));
-  //   auto entity_b = static_cast< entt::registry::entity_type >(reinterpret_cast< uintptr_t >(b->GetUserData()));
+  void ContactListener::EndContact(b2Contact* contact)
+  {
+    auto a = contact->GetFixtureA();
+    auto b = contact->GetFixtureB();
+    auto entity_a = static_cast< entt::registry::entity_type >(reinterpret_cast< uintptr_t >(a->GetUserData()));
+    auto entity_b = static_cast< entt::registry::entity_type >(reinterpret_cast< uintptr_t >(b->GetUserData()));
 
-  //   auto handler = Resources::get< ResourceEndContactFn >(*registry, entity_a, "b2-end-contact");
-  //   if(handler && *handler) (*handler)(*registry, entity_a, entity_b, contact);
+    // auto handler = Resources::get< ResourceEndContactFn >(*registry, entity_a, "b2-end-contact");
+    // if(handler && *handler) (*handler)(*registry, entity_a, entity_b, contact);
     
-  //   handler = Resources::get< ResourceEndContactFn >(*registry, entity_b, "b2-end-contact");
-  //   if(handler && *handler) (*handler)(*registry, entity_b, entity_a, contact);
-  // }
+    // handler = Resources::get< ResourceEndContactFn >(*registry, entity_b, "b2-end-contact");
+    // if(handler && *handler) (*handler)(*registry, entity_b, entity_a, contact);
+  }
 
-  // void ContactListener::PreSolve(b2Contact* contact, const b2Manifold* old_manifold)
-  // {
-  //   auto a = contact->GetFixtureA();
-  //   auto b = contact->GetFixtureB();
-  //   auto entity_a = static_cast< entt::registry::entity_type >(reinterpret_cast< uintptr_t >(a->GetUserData()));
-  //   auto entity_b = static_cast< entt::registry::entity_type >(reinterpret_cast< uintptr_t >(b->GetUserData()));
+  void ContactListener::PreSolve(b2Contact* contact, const b2Manifold* old_manifold)
+  {
+    auto a = contact->GetFixtureA();
+    auto b = contact->GetFixtureB();
+    auto entity_a = static_cast< entt::registry::entity_type >(reinterpret_cast< uintptr_t >(a->GetUserData()));
+    auto entity_b = static_cast< entt::registry::entity_type >(reinterpret_cast< uintptr_t >(b->GetUserData()));
 
-  //   auto handler = Resources::get< ResourcePreSolveFn >(*registry, entity_a, "b2-pre-solve");
-  //   if(handler && *handler) (*handler)(*registry, entity_a, entity_b, contact, old_manifold);
+    // auto handler = Resources::get< ResourcePreSolveFn >(*registry, entity_a, "b2-pre-solve");
+    // if(handler && *handler) (*handler)(*registry, entity_a, entity_b, contact, old_manifold);
     
-  //   handler = Resources::get< ResourcePreSolveFn >(*registry, entity_b, "b2-pre-solve");
-  //   if(handler && *handler) (*handler)(*registry, entity_b, entity_a, contact, old_manifold);
-  // }
+    // handler = Resources::get< ResourcePreSolveFn >(*registry, entity_b, "b2-pre-solve");
+    // if(handler && *handler) (*handler)(*registry, entity_b, entity_a, contact, old_manifold);
+  }
 
-  // using ResourcePostSolveFn = void(*)(entt::registry&, entt::entity, entt::entity, b2Contact*, const b2ContactImpulse*);
-  // void ContactListener::PostSolve(b2Contact* contact, const b2ContactImpulse* impulse) // old_manifold)
-  // {
-  //   auto a = contact->GetFixtureA();
-  //   auto b = contact->GetFixtureB();
-  //   auto entity_a = static_cast< entt::registry::entity_type >(reinterpret_cast< uintptr_t >(a->GetUserData()));
-  //   auto entity_b = static_cast< entt::registry::entity_type >(reinterpret_cast< uintptr_t >(b->GetUserData()));
+  using ResourcePostSolveFn = void(*)(entt::registry&, entt::entity, entt::entity, b2Contact*, const b2ContactImpulse*);
+  void ContactListener::PostSolve(b2Contact* contact, const b2ContactImpulse* impulse) // old_manifold)
+  {
+    auto a = contact->GetFixtureA();
+    auto b = contact->GetFixtureB();
+    auto entity_a = static_cast< entt::registry::entity_type >(reinterpret_cast< uintptr_t >(a->GetUserData()));
+    auto entity_b = static_cast< entt::registry::entity_type >(reinterpret_cast< uintptr_t >(b->GetUserData()));
 
-  //   auto handler = Resources::get< ResourcePostSolveFn >(*registry, entity_a, "b2-post-solve");
-  //   if(handler && *handler) (*handler)(*registry, entity_a, entity_b, contact, impulse);
+    // auto handler = Resources::get< ResourcePostSolveFn >(*registry, entity_a, "b2-post-solve");
+    // if(handler && *handler) (*handler)(*registry, entity_a, entity_b, contact, impulse);
     
-  //   handler = Resources::get< ResourcePostSolveFn >(*registry, entity_b, "b2-post-solve");
-  //   if(handler && *handler) (*handler)(*registry, entity_b, entity_a, contact, impulse);
-  // }
+    // handler = Resources::get< ResourcePostSolveFn >(*registry, entity_b, "b2-post-solve");
+    // if(handler && *handler) (*handler)(*registry, entity_b, entity_a, contact, impulse);
+  }
 
 
   template< typename Registry >
