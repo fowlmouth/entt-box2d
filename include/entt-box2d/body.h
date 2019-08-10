@@ -117,6 +117,7 @@ struct MRuby::ComponentInterface< Physics::Body >
 
     Physics::World& world = registry.get< Physics::World >(world_id);
     b2Body* b2_body = world.world.CreateBody(&body_def);
+    b2_body->SetUserData(reinterpret_cast< void* >(entity));
 
     auto& body = registry.assign_or_replace< Physics::Body >(entity, b2_body);
 
@@ -126,39 +127,3 @@ struct MRuby::ComponentInterface< Physics::Body >
 
 #endif
 
-
-// namespace Data
-// {
-
-//   template<typename Manager>
-//   struct Loader< json11::Json, Physics::Body, Manager >
-//   {
-//     static bool load(const json11::Json& json, Physics::Body& component, Manager& manager, entt::entity entity)
-//     {
-//       auto world = Relationships::search_parents< Physics::World >(manager, entity); // entity.search_parents< Components::PhysicsWorld >();
-//       if(! world)
-//         return false;
-
-//       b2BodyDef body_def;
-//       body_def.position = b2vec2(json["position"]);
-//       body_def.angularDamping = json["angular-damping"].number_value();
-//       body_def.linearDamping = json["linear-damping"].number_value();
-
-//       const std::string& type = json["type"].string_value();
-//       if(type == "static")
-//         body_def.type = b2_staticBody;
-//       else if(type == "kinematic")
-//         body_def.type = b2_kinematicBody;
-//       else
-//         body_def.type = b2_dynamicBody;
-
-//       b2Body* body = world->world.CreateBody(&body_def);
-//       body->SetUserData(reinterpret_cast< void* >(entity));
-      
-//       component.body = body;
-//       return true;
-
-//     }
-//   };
-
-// } // ::Data
