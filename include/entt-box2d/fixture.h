@@ -112,38 +112,49 @@ struct MRuby::ComponentInterface< Physics::Fixture >
 
       fixture = body->CreateFixture(&fixture_def);
     }
+    else if(shape_type == "box")
+    {
+      b2PolygonShape box_shape;
+      fixture_def.shape = &box_shape;
 
-    //TODO finish moving these from the old json stuff
-//       else if(type == "box")
-//       {
-//         float width = json["width"].number_value() * scale;
-//         float height = json["height"].number_value() * scale;
-//         float angle = json["angle"].number_value();
+      float width = 0, height = 0, angle = 0;
+      reader
+        ("width", width)
+        ("height", height)
+        ("angle", angle)
+      ;
 
-//         b2PolygonShape box_shape;
-//         box_shape.SetAsBox(width, height, offset, angle);
+      box_shape.SetAsBox(width, height, offset, angle);
+      fixture = body->CreateFixture(&fixture_def);
+    }
+    else if(shape_type == "chain")
+    {
+      b2ChainShape chain_shape;
+      fixture_def.shape = &chain_shape;
 
-//         fixture_def.shape = &box_shape;
-//         fixture = b2body->CreateFixture(&fixture_def);
-//       }
-//       else if(type == "chain")
-//       {
-//         const auto& points = json["points"].array_items();
-//         std::vector< b2Vec2 > vertices;
-//         vertices.resize(points.size());
-//         for(int i = 0; i < vertices.size(); ++i)
-//           vertices[i] = scale * b2vec2(points[i]) + offset;
+      std::vector< mrb_value > mrb_points;
+      bool is_loop = false;
 
-//         b2ChainShape chain_shape;
-//         if(json["loop"].is_null())
-//           chain_shape.CreateChain(&vertices[0], vertices.size());
-//         else
-//           chain_shape.CreateLoop(&vertices[0], vertices.size());
+      reader
+        ("points", mrb_points)
+        ("loop", is_loop)
+      ;
 
-//         fixture_def.shape = &chain_shape;
-//         fixture = b2body->CreateFixture(&fixture_def);
-//         LogDebug("Chain shape: " << fixture);
-//       }
+      std::vector< b2Vec2 > vertices;
+      vertices.resize(mrb_points.size());
+      for(int i = 0; i < vertices.size(); ++i)
+      {
+        b2vec2(state, mrb_points[i], vertices[i]);
+        vertices[i] *= scale;
+        vertices[i] += offset;
+      }
+
+      if(is_loop)
+        chain_shape.CreateLoop(&vertices[0], vertices.size());
+      else
+        chain_shape.CreateChain(&vertices[0], vertices.size());
+      fixture = body->CreateFixture(&fixture_def);
+    }
 
     if(fixture)
     {
