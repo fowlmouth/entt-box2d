@@ -96,7 +96,13 @@ struct MRuby::ComponentInterface< Physics::Body >
     entt::entity world_id;
 
     MRuby::HashReader reader(state, arg[0]);
-    reader("world", world_id)("type", body_type)("position", body_def.position);
+    reader
+      ("world", world_id)
+      ("type", body_type)
+      ("position", body_def.position)
+      ("linear-damping", body_def.linearDamping)
+      ("angular-damping", body_def.angularDamping)
+    ;
 
     if(!registry.valid(world_id) || !registry.has< Physics::World >(world_id))
       return mrb_nil_value();
@@ -114,8 +120,7 @@ struct MRuby::ComponentInterface< Physics::Body >
 
     auto& body = registry.assign_or_replace< Physics::Body >(entity, b2_body);
 
-    return arg[0]; // mrb_nil_value();
-
+    return arg[0];
   }
 };
 
