@@ -35,6 +35,14 @@ int main()
     world.set 'Physics::World', { gravity: [0, 10] }
     @world_id = world.id
 
+    ground_entity = $registry.create_entity
+    ground_entity.set 'Physics::Body', { world: world.id, type: 'static' }
+    ground_entity.set 'Physics::Fixture', {
+      body: ground_entity.id,
+      shape: 'chain',
+      points: [ [0, 10], [20, 10] ]
+    }
+
     entity2 = $registry.create_entity
     entity2.set 'Physics::Body', { world: world.id, type: 'dynamic', position: [0,0] }
     entity2.set 'Physics::Fixture', { body: entity2.id, shape: 'circle', radius: 1.0 }

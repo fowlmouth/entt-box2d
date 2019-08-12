@@ -276,9 +276,9 @@ struct MRuby::ComponentInterface< Physics::World >
     world.world.SetGravity(gravity);
 
     mrb_int iterations;
-    if(MRuby::read_hash(reader, "position-iterations", iterations))
+    if(MRuby::read_hash(state, arg[0], "position-iterations", iterations))
       world.positionIterations = iterations;
-    if(MRuby::read_hash(reader, "velocity-iterations", iterations))
+    if(MRuby::read_hash(state, arg[0], "velocity-iterations", iterations))
       world.velocityIterations = iterations;
 
     return arg[0];

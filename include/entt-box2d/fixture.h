@@ -61,7 +61,7 @@ struct MRuby::ComponentInterface< Physics::Fixture >
     b2FixtureDef fixture_def;
     std::string shape_type;
     entt::entity body_id;
-    b2Vec2 offset;
+    b2Vec2 offset(0,0);
     float scale = 1.0;
 
     MRuby::HashReader reader(state, arg[0]);
@@ -72,7 +72,7 @@ struct MRuby::ComponentInterface< Physics::Fixture >
       ("offset", offset)
       ("density", fixture_def.density)
       ("friction", fixture_def.friction)
-      ("is-sensor", fixture_def.isSensor)
+      ("is_sensor", fixture_def.isSensor)
     ;
 
     if(!registry.valid(body_id) || !registry.has< Physics::Body >(body_id))

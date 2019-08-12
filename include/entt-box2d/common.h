@@ -19,26 +19,18 @@ bool b2vec2(mrb_state* mrb, mrb_value value, b2Vec2& vec)
 
 namespace MRuby
 {
-  bool read_hash(HashReader& reader, const char* symbol, b2Vec2& value)
+  template<>
+  bool convert<b2Vec2>(mrb_state* state, mrb_value input, b2Vec2& output)
   {
-    mrb_value val = mrb_hash_get(
-      reader.state,
-      reader.self,
-      mrb_symbol_value(mrb_intern_cstr(reader.state, symbol))
-    );
-    return b2vec2(reader.state, val, value);
+    return b2vec2(state, input, output);
   }
 
-  bool read_hash(HashReader& reader, const char* symbol, entt::entity& entity)
+  template<>
+  bool convert<entt::entity>(mrb_state* state, mrb_value input, entt::entity& output)
   {
-    mrb_value val = mrb_hash_get(
-      reader.state,
-      reader.self,
-      mrb_symbol_value(mrb_intern_cstr(reader.state, symbol))
-    );
-    if(mrb_fixnum_p(val))
+    if(mrb_fixnum_p(input))
     {
-      entity = static_cast< entt::entity >(mrb_fixnum(val));
+      output = static_cast< entt::entity >(mrb_fixnum(input));
       return true;
     }
     return false;
