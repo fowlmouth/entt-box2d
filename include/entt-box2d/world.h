@@ -275,11 +275,13 @@ struct MRuby::ComponentInterface< Physics::World >
     auto& world = registry.assign_or_replace< Physics::World >(entity);
     world.world.SetGravity(gravity);
 
-    mrb_int iterations;
-    if(MRuby::read_hash(state, arg[0], "position-iterations", iterations))
-      world.positionIterations = iterations;
-    if(MRuby::read_hash(state, arg[0], "velocity-iterations", iterations))
-      world.velocityIterations = iterations;
+    mrb_int integer;
+    if(MRuby::read_hash(state, arg[0], "position-iterations", integer))
+      world.positionIterations = integer;
+    if(MRuby::read_hash(state, arg[0], "velocity-iterations", integer))
+      world.velocityIterations = integer;
+    if(MRuby::read_hash(state, arg[0], "PPM", integer))
+      world.PPM = integer;
 
     return arg[0];
   }
