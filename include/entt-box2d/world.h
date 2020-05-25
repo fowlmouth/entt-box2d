@@ -52,7 +52,7 @@ namespace Physics
     }
 
     World(World&& w)
-    :  world(std::move(w.world)),
+    : world(std::move(w.world)),
       contact_listener(std::move(w.contact_listener))
     {
     }
@@ -91,7 +91,7 @@ namespace Physics
   {
     entt::registry& r;
     b2Vec2 initial_point;
-    std::vector< std::pair< float32, b2Fixture* >> hits; 
+    std::vector< std::pair< float, b2Fixture* >> hits; 
     RayCastCallback(entt::registry& r, const b2Vec2& initial_point)
     :
       r(r),
@@ -99,9 +99,9 @@ namespace Physics
     {
     }
 
-    float32 ReportFixture(b2Fixture* fixture, const b2Vec2& point, const b2Vec2& normal, float32 fraction)
+    float ReportFixture(b2Fixture* fixture, const b2Vec2& point, const b2Vec2& normal, float fraction)
     {
-      float32 distance = b2DistanceSquared(initial_point, point);
+      float distance = b2DistanceSquared(initial_point, point);
       hits.push_back(std::make_pair(distance, fixture));
       return 1.f;
     }
@@ -116,7 +116,7 @@ namespace Physics
     const b2Vec2& a, const b2Vec2& b)
   {
     // LogDebug("Ray cast " << a.x << "," << a.y << " to " << b.x << "," << b.y);
-    using hit_t = std::pair< float32, b2Fixture* >;
+    using hit_t = std::pair< float, b2Fixture* >;
     RayCastCallback ray_cast_cb(r, a);
     world.world.RayCast(&ray_cast_cb, a, b);
     std::sort(
@@ -250,19 +250,23 @@ template<>
 struct MRuby::ComponentInterface< Physics::World >
 : MRuby::DefaultComponentInterface< Physics::World >
 {
-  static mrb_value get(mrb_state* state, entt::registry& registry, entt::entity entity, entt::registry::component_type type)
+  static mrb_value get(mrb_state* state, entt::registry& registry, entt::entity entity, entt::id_type type)
   {
     if(auto world = registry.try_get< Physics::World >(entity))
     {
-      MRuby::HashBuilder hash(state);
-
-      // auto& sf_sprite = sprite->sprite;
-      return hash.self;
+      MRuby::HashBuilder builder(state);
+      builder
+        ("gravity", world->world.GetGravity())
+        ("position_iterations", world->positionIterations)
+        ("velocity_iterations", world->velocityIterations)
+        ("PPM", world->PPM)
+      ;
+      return builder.self;
     }
     return mrb_nil_value();
   }
 
-  static mrb_value set(mrb_state* state, entt::registry& registry, entt::entity entity, entt::registry::component_type type, mrb_int argc, mrb_value* arg)
+  static mrb_value set(mrb_state* state, entt::registry& registry, entt::entity entity, entt::id_type type, mrb_int argc, mrb_value* arg)
   {
     if(!argc || ! mrb_hash_p(arg[0]))
       return mrb_nil_value();
@@ -272,7 +276,7 @@ struct MRuby::ComponentInterface< Physics::World >
     MRuby::HashReader reader(state, arg[0]);
     reader("gravity", gravity);
 
-    auto& world = registry.assign_or_replace< Physics::World >(entity);
+    auto& world = registry.emplace_or_replace< Physics::World >(entity);
     world.world.SetGravity(gravity);
 
     mrb_int integer;

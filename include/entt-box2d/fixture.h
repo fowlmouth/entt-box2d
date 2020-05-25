@@ -33,15 +33,11 @@ void destroy_fixture(entt::registry& r, entt::entity id)
 
 } // ::Physics
 
-
-
 #ifdef FOWL_ENTT_MRUBY
 
-template<>
-struct MRuby::ComponentInterface< Physics::Fixture >
-: MRuby::DefaultComponentInterface< Physics::Fixture >
-{
-  static mrb_value get(mrb_state* state, entt::registry& registry, entt::entity entity, entt::registry::component_type type)
+MRUBY_COMPONENT_INTERFACE_BEGIN(Physics::Fixture)
+
+  MRUBY_COMPONENT_GET
   {
     if(auto world = registry.try_get< Physics::Fixture >(entity))
     {
@@ -53,9 +49,9 @@ struct MRuby::ComponentInterface< Physics::Fixture >
     return mrb_nil_value();
   }
 
-  static mrb_value set(mrb_state* state, entt::registry& registry, entt::entity entity, entt::registry::component_type type, mrb_int argc, mrb_value* arg)
+  MRUBY_COMPONENT_SET
   {
-    if(!argc || ! mrb_hash_p(arg[0]))
+    if(!argc || ! mrb_hash_p(argv[0]))
       return mrb_nil_value();
 
     b2FixtureDef fixture_def;
@@ -64,7 +60,7 @@ struct MRuby::ComponentInterface< Physics::Fixture >
     b2Vec2 offset(0,0);
     float scale = 1.0;
 
-    MRuby::HashReader reader(state, arg[0]);
+    MRuby::HashReader reader(state, argv[0]);
     reader
       ("body", body_id)
       ("shape", shape_type)
@@ -97,7 +93,7 @@ struct MRuby::ComponentInterface< Physics::Fixture >
       b2PolygonShape polygon_shape;
       fixture_def.shape = &polygon_shape;
 
-      mrb_value points = mrb_hash_get(state, arg[0], mrb_symbol_value(mrb_intern_cstr(state, "points")));
+      mrb_value points = mrb_hash_get(state, argv[0], mrb_symbol_value(mrb_intern_cstr(state, "points")));
       mrb_int points_size = ARY_LEN(mrb_ary_ptr(points));
 
       std::vector< b2Vec2 > vertices;
@@ -159,14 +155,15 @@ struct MRuby::ComponentInterface< Physics::Fixture >
     if(fixture)
     {
       fixture->SetUserData(reinterpret_cast< void* >(entity));
-      registry.assign_or_replace< Physics::Fixture >(entity, fixture);
-      return arg[0];
+      registry.emplace_or_replace< Physics::Fixture >(entity, fixture);
+      return argv[0];
     }
 
     return mrb_nil_value();
 
   }
-};
+
+MRUBY_COMPONENT_INTERFACE_END
 
 #endif
 

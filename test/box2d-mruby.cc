@@ -19,7 +19,10 @@ struct TestRegistry
     physics_init();
 
     mrb = mrb_open();
-    mrb_init< Physics::World, Physics::Body, Physics::Fixture >(mrb);
+    mrb_init< //Physics::World, 
+      Physics::Body, Physics::Fixture >(mrb);
+    physics_mrb_init(mrb);
+
   }
 
 };
@@ -31,12 +34,15 @@ int main()
   TestRegistry registry;
 
   mrb_load_string(registry.mrb, R"MRUBY(
-    world = $registry.create_entity
-    world.set 'Physics::World', { gravity: [0, 10] }
-    @world_id = world.id
+    # world = $registry.create_entity
+    # world.set 'Physics::World', { gravity: [0, 10] }
+    # @world_id = world.id
+    # p world.get('Physics::World')
+
+    $registry.world_set_gravity [0,10]
 
     ground_entity = $registry.create_entity
-    ground_entity.set 'Physics::Body', { world: world.id, type: 'static' }
+    ground_entity.set 'Physics::Body', { type: 'static' }
     ground_entity.set 'Physics::Fixture', {
       body: ground_entity.id,
       shape: 'chain',
@@ -44,9 +50,14 @@ int main()
     }
 
     entity2 = $registry.create_entity
-    entity2.set 'Physics::Body', { world: world.id, type: 'dynamic', position: [0,0] }
+    entity2.set 'Physics::Body', { type: 'dynamic', position: [0,0] }
     entity2.set 'Physics::Fixture', { body: entity2.id, shape: 'circle', radius: 1.0 }
     @entity2_id = entity2.id
+
+    def update dt
+      $registry.world_step dt
+    end
+
   )MRUBY");
 
   auto entity1 = static_cast< entt::entity >(

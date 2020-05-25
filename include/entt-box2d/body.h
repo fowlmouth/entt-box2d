@@ -70,32 +70,47 @@ void destroy_body(entt::registry& r, entt::entity id)
 
 #ifdef FOWL_ENTT_MRUBY
 
-template<>
-struct MRuby::ComponentInterface< Physics::Body >
-: MRuby::DefaultComponentInterface< Physics::Body >
-{
-  static mrb_value get(mrb_state* state, entt::registry& registry, entt::entity entity, entt::registry::component_type type)
-  {
-    if(auto world = registry.try_get< Physics::Body >(entity))
-    {
-      MRuby::HashBuilder hash(state);
+MRUBY_COMPONENT_INTERFACE_BEGIN(Physics::Body)
 
-      // auto& sf_sprite = sprite->sprite;
-      return hash.self;
+
+  MRUBY_COMPONENT_GET
+  {
+    if(auto body = registry.try_get< Physics::Body >(entity))
+    {
+      if(auto b2body = body->body)
+      {
+        b2BodyType body_type = b2body->GetType();
+        std::string body_type_str;
+        if(body_type == b2_dynamicBody)
+          body_type_str = "dynamic";
+        else if(body_type == b2_staticBody)
+          body_type_str = "static";
+        else
+          body_type_str = "kinematic";
+        
+        MRuby::HashBuilder builder(state);
+        builder
+          ("type", body_type_str)
+          ("position", b2body->GetPosition())
+          ("linear-damping", b2body->GetLinearDamping())
+          ("angular-damping", b2body->GetAngularDamping())
+        ;
+        return builder.self;
+      }
     }
     return mrb_nil_value();
   }
 
-  static mrb_value set(mrb_state* state, entt::registry& registry, entt::entity entity, entt::registry::component_type type, mrb_int argc, mrb_value* arg)
+  MRUBY_COMPONENT_SET
   {
-    if(!argc || ! mrb_hash_p(arg[0]))
+    if(!argc || ! mrb_hash_p(argv[0]))
       return mrb_nil_value();
 
     b2BodyDef body_def;
     std::string body_type;
     entt::entity world_id;
 
-    MRuby::HashReader reader(state, arg[0]);
+    MRuby::HashReader reader(state, argv[0]);
     reader
       ("world", world_id)
       ("type", body_type)
@@ -119,11 +134,12 @@ struct MRuby::ComponentInterface< Physics::Body >
     b2Body* b2_body = world.world.CreateBody(&body_def);
     b2_body->SetUserData(reinterpret_cast< void* >(entity));
 
-    auto& body = registry.assign_or_replace< Physics::Body >(entity, b2_body);
+    auto& body = registry.emplace_or_replace< Physics::Body >(entity, b2_body);
 
-    return arg[0];
+    return argv[0];
   }
-};
+
+MRUBY_COMPONENT_INTERFACE_END
 
 #endif
 
