@@ -4,9 +4,8 @@
 
 #include <box2d/box2d.h>
 
-#include "common.h"
+#include "registry-mixin.h"
+
 #include "world.h"
 #include "body.h"
 #include "fixture.h"
-
-#include "registry-mixin.h"

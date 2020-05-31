@@ -59,7 +59,8 @@ bool set_linear_velocity(entt::registry& r, entt::entity entity, b2Vec2 velocity
 void destroy_body(entt::registry& r, entt::entity id)
 {
   Body& body = r.get< Body >(id);
-  body.body->GetWorld()->DestroyBody( body.body );
+  if(body.body)
+    body.body->GetWorld()->DestroyBody( body.body );
   body.body = nullptr;
 }
 
@@ -79,21 +80,27 @@ MRUBY_COMPONENT_INTERFACE_BEGIN(Physics::Body)
     {
       if(auto b2body = body->body)
       {
-        b2BodyType body_type = b2body->GetType();
         std::string body_type_str;
-        if(body_type == b2_dynamicBody)
+        switch(b2body->GetType())
+        {
+        case b2_dynamicBody:
           body_type_str = "dynamic";
-        else if(body_type == b2_staticBody)
+          break;
+
+        case b2_staticBody:
           body_type_str = "static";
-        else
+          break;
+
+        default:
           body_type_str = "kinematic";
+        }
         
         MRuby::HashBuilder builder(state);
         builder
           ("type", body_type_str)
           ("position", b2body->GetPosition())
-          ("linear-damping", b2body->GetLinearDamping())
-          ("angular-damping", b2body->GetAngularDamping())
+          ("linear_damping", b2body->GetLinearDamping())
+          ("angular_damping", b2body->GetAngularDamping())
         ;
         return builder.self;
       }
@@ -108,19 +115,16 @@ MRUBY_COMPONENT_INTERFACE_BEGIN(Physics::Body)
 
     b2BodyDef body_def;
     std::string body_type;
-    entt::entity world_id;
 
     MRuby::HashReader reader(state, argv[0]);
     reader
-      ("world", world_id)
       ("type", body_type)
       ("position", body_def.position)
-      ("linear-damping", body_def.linearDamping)
-      ("angular-damping", body_def.angularDamping)
+      ("linear_damping", body_def.linearDamping)
+      ("angular_damping", body_def.angularDamping)
     ;
 
-    if(!registry.valid(world_id) || !registry.has< Physics::World >(world_id))
-      return mrb_nil_value();
+    Physics::World& world = registry.ctx< Physics::World >();
 
     b2BodyType b2_type = b2_dynamicBody;
     if(body_type == "static")
@@ -130,7 +134,6 @@ MRUBY_COMPONENT_INTERFACE_BEGIN(Physics::Body)
 
     body_def.type = b2_type;
 
-    Physics::World& world = registry.get< Physics::World >(world_id);
     b2Body* b2_body = world.world.CreateBody(&body_def);
     b2_body->SetUserData(reinterpret_cast< void* >(entity));
 

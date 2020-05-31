@@ -1,5 +1,7 @@
 #pragma once
 
+#include "body.h"
+
 namespace Physics
 {
 
@@ -39,12 +41,61 @@ MRUBY_COMPONENT_INTERFACE_BEGIN(Physics::Fixture)
 
   MRUBY_COMPONENT_GET
   {
-    if(auto world = registry.try_get< Physics::Fixture >(entity))
+    if(auto fixture = registry.try_get< Physics::Fixture >(entity))
     {
-      MRuby::HashBuilder hash(state);
+      if(auto f = fixture->fixture)
+      {
+        MRuby::HashBuilder hash(state);
 
-      // auto& sf_sprite = sprite->sprite;
-      return hash.self;
+        b2Shape* shape = f->GetShape();
+        b2Shape::Type type = f->GetType();
+        switch(type)
+        {
+        case b2Shape::e_circle:
+          hash
+            ("shape", "circle")
+            ("radius", shape->m_radius);
+          break;
+
+        case b2Shape::e_polygon:
+        {
+          b2PolygonShape* poly = reinterpret_cast< b2PolygonShape* >(shape);
+
+          int size = poly->GetChildCount();
+          mrb_value points[size];
+          for(int i = 0; i < size; ++i)
+            MRuby::to_mrb(state, poly->m_vertices[i], points[i]);
+
+          hash
+            ("shape", "poly")
+            ("points", mrb_ary_new_from_values(state, size, points));
+        } break;
+
+        case b2Shape::e_chain:
+        {
+          b2ChainShape* chain = reinterpret_cast< b2ChainShape* >(shape);
+
+          int size = chain->GetChildCount();
+          mrb_value points[size];
+          for(int i = 0; i < size; ++i)
+            MRuby::to_mrb(state, chain->m_vertices[i], points[i]);
+
+          hash
+            ("shape", "chain")
+            ("points", mrb_ary_new_from_values(state, size, points));
+        } break;
+
+        default:
+          return mrb_nil_value();
+        }
+
+        hash
+          ("density", f->GetDensity())
+          ("friction", f->GetFriction())
+          ("is_sensor", f->IsSensor());
+
+        return hash.self;
+      }
     }
     return mrb_nil_value();
   }

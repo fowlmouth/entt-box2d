@@ -5,11 +5,10 @@ require'optparse'
 opts = {
   entt: nil,
   cc: 'clang++',
-  output: 'box2d-test',
-  cfiles: 'box2d-test.cc',
+  output: 'box2d-mruby',
   box2d: nil,
-  box2d_build: 'x86_64/Debug',
-  l: ['Box2D']
+  box2d_build: 'build/src',
+  l: ['box2d']
 }
 
 OptionParser.new do |o|
@@ -47,6 +46,9 @@ OptionParser.new do |o|
 
 end.parse!
 
+
+opts[:cfiles] ||= "#{opts[:output]}.cc"
+
 fail = false
 opts.each {|k,v|
   if v.nil?
@@ -58,14 +60,14 @@ abort if fail
 
 cmd = "#{opts[:cc]} \
   -g -std=c++1z \
-  -I #{opts[:entt]}/src \
-  -I #{opts[:box2d]} \
+  -I #{opts[:entt]} \
+  -I #{opts[:box2d]}/include \
   #{`pkg-config --cflags sfml-graphics`.strip} \
   #{opts[:I].map{|dir| "-I#{dir}"}.join(' ') if opts[:I]} \
   -I ../include \
   #{opts[:cfiles]} \
   -o #{opts[:output]} \
-  -L #{opts[:box2d]}/build/bin/#{opts[:box2d_build]} \
+  -L #{opts[:box2d]}/#{opts[:box2d_build]} \
   #{opts[:l].map{|lib| "-l#{lib}"}.join(' ')} \
   #{`pkg-config --libs sfml-graphics`.strip}"
 
