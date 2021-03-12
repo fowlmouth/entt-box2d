@@ -8,7 +8,7 @@ struct Body
   b2Body* body = nullptr;
 };
 
-bool set_position(entt::registry& r, entt::entity entity, Body& body, b2Vec2 position)
+bool set_position(Body& body, b2Vec2 position)
 {
   if(body.body)
   {
@@ -21,7 +21,17 @@ bool set_position(entt::registry& r, entt::entity entity, Body& body, b2Vec2 pos
 bool set_position(entt::registry& r, entt::entity entity, b2Vec2 position)
 {
   if(Body* body = r.try_get< Body >(entity))
-    return set_position(r, entity, *body, position);
+    return set_position(*body, position);
+  return false;
+}
+
+bool get_position(Body& body, b2Vec2& position)
+{
+  if(body.body)
+  {
+    position = body.body->GetPosition();
+    return true;
+  }
   return false;
 }
 
@@ -29,8 +39,7 @@ bool get_position(entt::registry& r, entt::entity entity, b2Vec2& position)
 {
   if(Body* body = r.try_get< Body >(entity))
   {
-    position = body->body->GetPosition();
-    return true;
+    return get_position(*body, position);
   }
   return false;
 }
@@ -55,6 +64,53 @@ bool set_linear_velocity(entt::registry& r, entt::entity entity, b2Vec2 velocity
   return false;
 }
 
+bool get_linear_velocity(entt::registry& r, entt::entity entity, b2Vec2& velocity)
+{
+  if(auto body = r.try_get< Body >(entity))
+  {
+    velocity = body->body->GetLinearVelocity();
+    return true;
+  }
+  return false;
+}
+
+bool apply_force_to_center(Body& body, b2Vec2 force)
+{
+  if(auto b2body = body.body)
+  {
+    b2body->ApplyForceToCenter(force, true);
+    return true;
+  }
+  return false;
+}
+
+bool apply_force_to_center(entt::registry& r, entt::entity entity, b2Vec2 force)
+{
+  if(auto body = r.try_get< Body >(entity))
+  {
+    return apply_force_to_center(*body, force);
+  }
+  return false;
+}
+
+bool apply_torque(Body& body, float torque)
+{
+  if(auto b2body = body.body)
+  {
+    b2body->ApplyTorque(torque, true);
+    return true;
+  }
+  return false;
+}
+
+bool apply_torque(entt::registry& r, entt::entity entity, float torque)
+{
+  if(auto body = r.try_get<Body>(entity))
+  {
+    return apply_torque(*body, torque);
+  }
+  return false;
+}
 
 void destroy_body(entt::registry& r, entt::entity id)
 {

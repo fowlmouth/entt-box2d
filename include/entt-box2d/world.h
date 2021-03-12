@@ -42,7 +42,7 @@ namespace Physics
     b2World world;
     int32 velocityIterations = 6;
     int32 positionIterations = 2;
-    float PPM = 32.f;
+    float scale = 32.f;
 
     ContactListener contact_listener;
 
@@ -259,7 +259,7 @@ struct MRuby::ComponentInterface< Physics::World >
         ("gravity", world->world.GetGravity())
         ("position_iterations", world->positionIterations)
         ("velocity_iterations", world->velocityIterations)
-        ("PPM", world->PPM)
+        ("scale", world->scale)
       ;
       return builder.self;
     }
@@ -284,8 +284,8 @@ struct MRuby::ComponentInterface< Physics::World >
       world.positionIterations = integer;
     if(MRuby::read_hash(state, arg[0], "velocity-iterations", integer))
       world.velocityIterations = integer;
-    if(MRuby::read_hash(state, arg[0], "PPM", integer))
-      world.PPM = integer;
+    if(MRuby::read_hash(state, arg[0], "scale", integer))
+      world.scale = integer;
 
     return arg[0];
   }

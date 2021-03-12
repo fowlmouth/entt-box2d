@@ -13,10 +13,10 @@ class SFMLDebugDraw : public b2Draw
 {
 private:
 	sf::RenderWindow* window;
-	float scale;
+	float& scale;
 
 public:
-	SFMLDebugDraw(sf::RenderWindow* window, float scale)
+	SFMLDebugDraw(sf::RenderWindow* window, float& scale)
 	: window(window), scale(scale)
 	{
 	}

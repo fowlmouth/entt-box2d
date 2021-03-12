@@ -24,6 +24,11 @@ bool set_sensor(entt::registry& r, entt::entity entity, bool is_sensor)
   return false;
 }
 
+// bool create_chain(const std::vector< b2Vec2 >& points, bool is_loop = false)
+// {
+  
+// }
+
 void destroy_fixture(entt::registry& r, entt::entity id)
 {
   Fixture& fixture = r.get< Fixture >(id);
